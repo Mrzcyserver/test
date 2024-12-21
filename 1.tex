@@ -1,0 +1,346 @@
+\newcommand{\subsubsubsection}[1]{\paragraph{#1}\mbox{}\\}
+\setcounter{secnumdepth}{4} % how many sectioning levels to assign numbers to
+\setcounter{tocdepth}{4} % how many sectioning levels to show in ToC
+
+\section{\mbox{实验结果}}
+在这里，我们报告了一系列支持我们研究的实验。我们表明我们在相关工作中提出的一系列算法，能够有效的解决二部图研究中的一系列问题。我们首先评估了两种二部图问题：二部图的判定问题，按照我们实现的DFS和BFS算法对该问题进行探究。接下来，我们评估了二部图匹配这一问题，并表明使用匈牙利算法,Hopcroft-Karp算法,Kuhn-Munkres算法解决这一问题是可行的。最后，我们研究了每个问题对应的几种算法的性能。
+为了确保分析的全面性，我们使用多个具有不同边数和顶点数的图来进行实验。由于篇幅限制，在附录中给出了所有使用的数据集的实现细节和描述及具体的C++代码。
+
+\subsection{\textbf{\mbox{二部图的判定}}}
+%table 
+\begin{table*}
+	
+	\caption{二部图判定问题实验结果}
+	\label{tab_demo}
+	\centering
+	\tabcolsep=0.006\linewidth
+	\begin{tabular*}{0.99\linewidth}{@{}ccccccccccccccc@{}}
+		\hline
+		\multirow{2}{*}{Algorithm} & \multicolumn{2}{c}{Sample 1} & \multicolumn{2}{c}{Sample 2} & \multicolumn{2}{c}{Sample 3} & \multicolumn{2}{c}{Sample 4} & \multicolumn{2}{c}{Sample 5} &\multicolumn{2}{c}{Sample 6} &\multicolumn{2}{c}{Sample 7}\\
+		
+		 &Result & Time &  Result & Time &Result & Time &Result & Time &Result & Time &Result & Time &Result & Time \\
+		\hline
+		DFS  & Yes & 3  & No & 1  &Yes & 0  &Yes & 1  &Yes & 0  &Yes & 1  &Yes & 1128    \\
+		BFS  & Yes & 4 &  No & 2 &Yes & 0 &Yes & 2 &Yes & 1 &Yes & 3 &Yes & 1327 \\
+		\hline
+	\end{tabular*}
+\end{table*}
+DFS和BFS两种算法常用于二部图的判定问题。在这里，我们进行根据图的信息判断是否是二部图的实验，以比较使用两种方法的特点和性能。
+
+\subsubsection{\textbf{\mbox{实验设计}}}
+目标是从所给图中检索二部图。我们考虑了总共7个具有代表性的图。我们的测试数据十分全面,节点数$n$和边数$m$一般保证在$0\sim10$之间,并额外设置了$n=100,m=50$的大规模图用于进行极端情况下的测试,并且我们的测试数据还保证满足以下四个条件:
+\begin{itemize}
+	\item 随机生成的图数据，确保图是连通的。
+	\item 部分数据为二分图，部分数据非二分图。
+	\item 涵盖普通二分图、非普通二分图、空图、树结构、单节点图、复杂二分图、超大规模二分图。
+\end{itemize}
+我们具体的实验步骤如下:
+\begin{enumerate}
+	\item 生成不同规模和特点的测试数据。
+	\item 分别使用 BFS、DFS 染色法实现二分图判定算法。
+	\item 对每组测试数据，记录算法执行时间。
+	\item 分析实验结果，比较不同算法的优劣。
+\end{enumerate}
+
+\subsubsection{\textbf{\mbox{结果}}}
+在表 1 中，我们报告了 7 个具有代表性的图的判定结果。我们发现使用 DFS 性能普遍优于BFS，这可能是由于DFS在图结构不太深,不太复杂时处理效率高,但是随着节点数和边数变多,BFS与DFS的性能的比值逐渐接近,根据两算法的理论特点,我们猜测在图更加复杂,深度更大时,BFS或许会超过DFS的性能,但是在一般问题中,DFS仍然是最优的选择。
+
+\subsection{\textbf{\mbox{二部图的匹配}}}
+\subsubsection{问题描述}
+给定一个二部图 $G = \left(V, E\right)$, 其左部点的个数为 $n$, 右部点的个数为 $m$, 边数为 $e$, 求其最大匹配的大小及一个最大匹配。
+\subsubsection{数据结构约定}
+在本问题中, 我们使用邻接表 $g$ 表示整个图, 其中 $g[i]$ 表示从 $i$ 出发的所有边的终点的集合。注意二部图是无向图。使用 $L$ 表示二部图的左部点的集合, $R$ 表示二部图的右部点的集合, $match$ 表示匹配关系。
+如果 $match[i] = -1$, 表示编号为 $i$ 的点不与任何点匹配, 否则表示编号为 $i$ 的点与编号为 $match[i]$ 的点匹配。
+
+例如下面是一个二部图(边的格式是 $(u, v)$): 
+$$
+\begin{aligned}
+	V &= \left\{1, 2, 3, 4\right\} \\
+	E &= \left\{(1, 3), (1, 4), (2, 3), (2, 4)\right\} \\
+	g[1] &= \left\{3, 4\right\} \\
+	g[2] &= \left\{3, 4\right\} \\
+	g[3] &= \left\{1, 2\right\} \\
+	g[4] &= \left\{1, 2\right\} \\
+	L &= \left\{1, 2\right\} \\
+	R &= \left\{3, 4\right\} \\
+\end{aligned}
+$$
+这个二部图的一个最大匹配为:
+$$
+\begin{aligned}
+	match[1] &= 3 \\
+	match[2] &= 4 \\
+	match[3] &= 1 \\
+	match[4] &= 2 \\
+\end{aligned}
+$$
+其大小为 $2$。
+
+现在, $g$, $L$, $R$ 已知, 需要求解最大匹配的大小及一个最大匹配的 $match$。
+\subsubsection{匈牙利算法 (Kuhn 算法)}
+匈牙利算法 (Kuhn 算法) 是一种求解二部图最大匹配的算法, 其基本思想是通过不断增广路径来增加匹配的大小。时间复杂度为 $\mathcal{O}(\left|V\right|\left|E\right|)$, 空间复杂度为 $\mathcal{O}(\left|V\right| + \left|E\right|)$。
+\subsubsubsection{算法实现}
+附录 3 是对该算法的一个实现。函数 Kuhn($g$, $p$) 需要参数 $g$ 和 $p$, $g$ 是图的邻接表, $p$ 是二部图两部分点集之一。函数返回匹配关系 $match$。
+\subsubsection{Hopcroft-Karp 算法}
+Hopcroft-Karp 在 Kuhn 算法的基础上进行了优化, 时间复杂度为 $\mathcal{O}(\sqrt{\left|V\right|}\left|E\right|)$, 空间复杂度为 $\mathcal{O}(\left|V\right| + \left|E\right|)$。
+\subsubsubsection{算法实现}
+附录 4 是对该算法的一个实现。函数 HopcroftKarp($g$, $p$) 需要参数 $g$ 和 $p$, $g$ 是图的邻接表, $p$ 是二部图两部分点集之一。函数返回匹配关系 $match$。
+\subsubsection{Dinic 算法}
+二部图匹配可以转化为最大流问题, 然后使用 Dinic 算法求解。
+具体的操作步骤是, 建立超级源点 $s$ 和超级汇点 $t$, 将 $s$ 分别向 $L$ 中的点连有向边, 每条边容量为 $1$; 将 $R$ 中的点分别向 $t$ 连有向边, 每条边容量为 $1$; 对于 $L$ 和 $R$ 之间的每条边 $\left(u, v\right)$, 其中 $u \in L$, $v \in R$, 将其变为从 $u$ 到 $v$ 的有向边, 容量为 $1$。最后求解 $s$ 到 $t$ 的最大流即可。
+最大匹配的大小等于从源点到汇点的最大流的大小, 即 mf.flow($s$, $t$) 的结果。运行该函数后, 具体的匹配关系可以通过 mf.get\_edges() 中的边来确定。
+时间复杂度等于 Dinic 算法的时间复杂度。对于每条边都是单位容量的网络, Dinic 算法时间复杂度为 $\mathcal{O}(\sqrt{\left|V\right|}\left|E\right|)$, 空间复杂度为 $\mathcal{O}(\left|V\right| + \left|E\right|)$。
+\subsubsubsection{算法实现}
+附录 5 是对该算法的一个实现。算法流程在 solve() 函数中调用 Dinic 类进行。
+\subsubsection{正确性与性能测试}
+以上算法都使用 \href{https://www.luogu.com.cn/problem/P3386}{Luogu P3386} 进行实际应用 (见附录)。
+我们首先利用 Luogu 进行初步测试。数据的范围是
+$$
+\begin{gathered}
+	1 \leq n, m \leq 500 \\
+	1 \leq e \leq 50000 \\
+	1 \leq u \leq n, 1 \leq v \leq m
+\end{gathered}
+$$
+
+\begin{table}[H]
+	\centering
+	\caption{Kuhn 算法的\href{https://www.luogu.com.cn/record/195131973}{测试结果}}
+	\label{tab:kuhn_test_results}
+	\tabcolsep=0.09\linewidth
+	\begin{tabular*}{0.99\linewidth}{cccc}
+		\toprule
+		\textbf{测试点编号} & \textbf{测试状态} & \textbf{时间} & \textbf{内存} \\
+		\midrule
+		\#1 & \textcolor{green}{Accepted} & 4 ms & 596.00 KB \\
+		\#2 & \textcolor{green}{Accepted} & 4 ms & 564.00 KB \\
+		\#3 & \textcolor{green}{Accepted} & 3 ms & 552.00 KB \\
+		\#4 & \textcolor{green}{Accepted} & 3 ms & 668.00 KB \\
+		\#5 & \textcolor{green}{Accepted} & 4 ms & 556.00 KB \\
+		\#6 & \textcolor{green}{Accepted} & 4 ms & 600.00 KB \\
+		\#7 & \textcolor{green}{Accepted} & 4 ms & 556.00 KB \\
+		\#8 & \textcolor{green}{Accepted} & 18 ms & 1.10 MB \\
+		\#9 & \textcolor{green}{Accepted} & 18 ms & 1.07 MB \\
+		\#10 & \textcolor{green}{Accepted} & 17 ms & 1.18 MB \\
+		\#11 & \textcolor{green}{Accepted} & 3 ms & 564.00 KB \\
+		\bottomrule
+	\end{tabular*}
+\end{table}
+
+\begin{table}[H]
+	\centering
+	\caption{Hopcroft-Karp 算法的\href{https://www.luogu.com.cn/record/195132225}{测试结果}}
+	\label{tab:hopcroft_karp_test_results}
+	\tabcolsep=0.09\linewidth
+	\begin{tabular}{cccc}
+		\toprule
+		\textbf{测试点编号} & \textbf{测试状态} & \textbf{时间} & \textbf{内存} \\
+		\midrule
+		\#1 & \textcolor{green}{Accepted} & 4 ms & 568.00 KB \\
+		\#2 & \textcolor{green}{Accepted} & 4 ms & 556.00 KB \\
+		\#3 & \textcolor{green}{Accepted} & 3 ms & 612.00 KB \\
+		\#4 & \textcolor{green}{Accepted} & 4 ms & 552.00 KB \\
+		\#5 & \textcolor{green}{Accepted} & 4 ms & 612.00 KB \\
+		\#6 & \textcolor{green}{Accepted} & 4 ms & 556.00 KB \\
+		\#7 & \textcolor{green}{Accepted} & 4 ms & 600.00 KB \\
+		\#8 & \textcolor{green}{Accepted} & 9 ms & 1.12 MB \\
+		\#9 & \textcolor{green}{Accepted} & 9 ms & 1.10 MB \\
+		\#10 & \textcolor{green}{Accepted} & 9 ms & 1.15 MB \\
+		\#11 & \textcolor{green}{Accepted} & 3 ms & 568.00 KB \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+\begin{table}[H]
+	\centering
+	\caption{Dinic 算法的\href{https://www.luogu.com.cn/record/195132700}{测试结果}}
+	\label{tab:dinic_test_results}
+	\tabcolsep=0.09\linewidth
+	\begin{tabular}{cccc}
+		\toprule
+		\textbf{测试点编号} & \textbf{测试状态} & \textbf{时间} & \textbf{内存} \\
+		\midrule
+		\#1 & \textcolor{green}{Accepted} & 4 ms & 564.00 KB \\
+		\#2 & \textcolor{green}{Accepted} & 4 ms & 564.00 KB \\
+		\#3 & \textcolor{green}{Accepted} & 3 ms & 560.00 KB \\
+		\#4 & \textcolor{green}{Accepted} & 3 ms & 560.00 KB \\
+		\#5 & \textcolor{green}{Accepted} & 4 ms & 624.00 KB \\
+		\#6 & \textcolor{green}{Accepted} & 4 ms & 608.00 KB \\
+		\#7 & \textcolor{green}{Accepted} & 4 ms & 572.00 KB \\
+		\#8 & \textcolor{green}{Accepted} & 12 ms & 2.84 MB \\
+		\#9 & \textcolor{green}{Accepted} & 12 ms & 2.84 MB \\
+		\#10 & \textcolor{green}{Accepted} & 12 ms & 2.84 MB \\
+		\#11 & \textcolor{green}{Accepted} & 3 ms & 660.00 KB \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+由测试结果知, 三个算法的实现都正确, 且在本题数据下效率非常高。但是由于本题数据强度较低, 对不同算法的区分度不高, 因此我们需要更多的数据来进行性能测试。
+
+我们使用附录 7 的程序进行基准测试(所用的程序见附录)。对每个 $\left(n, m, e\right)$ 的组合, 我们随机生成 300 组数据, 分别给这三个算法进行测试, 计算运行时间的平均值、最小值和最大值。测试结果如下:
+
+\begin{table}[H]
+	\centering
+	\caption{$n = 25000$, $m = 25000$ 时的基准测试结果}
+	\label{tab:benchmark_e}
+	
+	\resizebox{\textwidth}{!}{
+		\begin{tabular}{cccccccccc}
+			\toprule
+			$e$ & \textbf{Kuhn Avg (ms)} & \textbf{Kuhn Min (ms)} & \textbf{Kuhn Max (ms)} & 
+			\textbf{Hopcroft-Karp Avg (ms)} & \textbf{Hopcroft-Karp Min (ms)} & \textbf{Hopcroft-Karp Max (ms)} &
+			\textbf{Dinic Avg (ms)} & \textbf{Dinic Min (ms)} & \textbf{Dinic Max (ms)} \\
+			\midrule
+			5000 & 30 & 16 & 65 & 30 & 17 & 127 & 33 & 21 & 57 \\
+			10000 & 33 & 21 & 107 & 34 & 18 & 107 & 38 & 24 & 110 \\
+			15000 & 40 & 19 & 156 & 41 & 20 & 157 & 47 & 27 & 168 \\
+			20000 & 50 & 22 & 139 & 51 & 24 & 120 & 58 & 30 & 128 \\
+			25000 & 49 & 25 & 111 & 50 & 25 & 111 & 59 & 33 & 119 \\
+			30000 & 54 & 29 & 137 & 55 & 26 & 122 & 66 & 35 & 140 \\
+			35000 & 52 & 34 & 125 & 53 & 28 & 117 & 66 & 47 & 137 \\
+			40000 & 56 & 36 & 118 & 57 & 29 & 121 & 72 & 45 & 135 \\
+			45000 & 38 & 27 & 90 & 39 & 29 & 52 & 58 & 46 & 255 \\
+			50000 & 40 & 29 & 61 & 41 & 30 & 57 & 64 & 53 & 75 \\
+			55000 & 47 & 35 & 60 & 44 & 32 & 67 & 72 & 63 & 84 \\
+			60000 & 72 & 60 & 121 & 44 & 34 & 63 & 83 & 72 & 103 \\
+			65000 & 151 & 119 & 243 & 52 & 39 & 216 & 108 & 83 & 230 \\
+			70000 & 268 & 215 & 438 & 53 & 42 & 169 & 139 & 94 & 178 \\
+			75000 & 387 & 302 & 470 & 54 & 42 & 106 & 142 & 96 & 289 \\
+			80000 & 482 & 403 & 592 & 55 & 41 & 65 & 134 & 93 & 167 \\
+			85000 & 572 & 462 & 659 & 56 & 44 & 77 & 129 & 97 & 161 \\
+			90000 & 642 & 554 & 757 & 57 & 44 & 70 & 125 & 93 & 157 \\
+			95000 & 704 & 629 & 838 & 59 & 45 & 72 & 122 & 93 & 153 \\
+			100000 & 747 & 647 & 881 & 61 & 50 & 231 & 120 & 93 & 147 \\
+			\bottomrule
+		\end{tabular}
+	}
+\end{table}
+
+\begin{table}[H]
+	\centering
+	\caption{$n = m$, $e = 25000$ 时的基准测试结果}
+	\label{tab:benchmark_n}
+	\resizebox{\textwidth}{!}{
+		\begin{tabular}{cccccccccc}
+			\toprule
+			$n$ & \textbf{Kuhn Avg (ms)} & \textbf{Kuhn Min (ms)} & \textbf{Kuhn Max (ms)} & 
+			\textbf{Hopcroft-Karp Avg (ms)} & \textbf{Hopcroft-Karp Min (ms)} & \textbf{Hopcroft-Karp Max (ms)} &
+			\textbf{Dinic Avg (ms)} & \textbf{Dinic Min (ms)} & \textbf{Dinic Max (ms)} \\
+			\midrule
+			5000 & 74 & 54 & 145 & 50 & 30 & 124 & 57 & 36 & 226 \\
+			10000 & 60 & 34 & 122 & 52 & 24 & 118 & 65 & 46 & 136 \\
+			15000 & 53 & 34 & 129 & 54 & 30 & 129 & 63 & 37 & 144 \\
+			20000 & 50 & 32 & 119 & 51 & 30 & 121 & 59 & 41 & 124 \\
+			25000 & 50 & 30 & 124 & 51 & 33 & 116 & 60 & 41 & 130 \\
+			30000 & 53 & 30 & 112 & 55 & 26 & 123 & 63 & 35 & 132 \\
+			35000 & 53 & 32 & 116 & 56 & 30 & 117 & 65 & 45 & 142 \\
+			40000 & 51 & 26 & 111 & 53 & 32 & 115 & 63 & 39 & 125 \\
+			45000 & 52 & 26 & 120 & 54 & 26 & 116 & 64 & 43 & 130 \\
+			50000 & 52 & 30 & 142 & 54 & 27 & 147 & 66 & 44 & 161 \\
+			55000 & 52 & 30 & 135 & 54 & 31 & 141 & 67 & 41 & 163 \\
+			60000 & 52 & 25 & 130 & 54 & 36 & 117 & 67 & 48 & 133 \\
+			65000 & 54 & 34 & 120 & 56 & 28 & 119 & 69 & 48 & 148 \\
+			70000 & 53 & 26 & 195 & 55 & 26 & 117 & 69 & 47 & 139 \\
+			75000 & 54 & 33 & 114 & 56 & 31 & 119 & 70 & 48 & 133 \\
+			80000 & 54 & 25 & 128 & 55 & 26 & 120 & 72 & 51 & 143 \\
+			85000 & 54 & 25 & 112 & 56 & 29 & 117 & 72 & 50 & 151 \\
+			90000 & 53 & 33 & 144 & 55 & 28 & 123 & 73 & 48 & 140 \\
+			95000 & 55 & 27 & 117 & 56 & 27 & 244 & 73 & 52 & 132 \\
+			100000 & 53 & 28 & 133 & 55 & 27 & 132 & 73 & 46 & 166 \\
+			\bottomrule
+		\end{tabular}
+	}
+\end{table}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=\textwidth]{sec/code/benchmark/plot_e.pdf}
+	\caption{$n = 25000$, $m = 25000$ 时的基准测试结果图}
+	\label{fig:benchmark_e_plot}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=\textwidth]{sec/code/benchmark/plot_n.pdf}
+	\caption{$n = m$, $e = 25000$ 时的基准测试结果}
+	\label{fig:benchmark_n_plot}
+\end{figure}
+
+根据测试结果, 我们可以得出以下结论: 
+\begin{itemize}
+	\item 当点数固定时, 如果边数 $e$ 较小, 三个算法的效率差异不大。如果边数 $e$ 较大, Dinic 算法和 Hopcroft-Karp 算法的效率明显高于 Kuhn 算法。随着边数增多, Kuhn 算法的用时增长较快, 用时快速增长, 而 Hopcroft-Karp 算法和 Dinic 算法的用时都不超过 300 ms。
+	\item 当边数固定时, 三个算法的效率差异不大, 用时都不超过 300 ms. 但当边数较多时, Dinic 算法的用时较长.
+	\item 可见 Kuhn 算法在边较少时表现较好, 在边较多时表现较差，而 Hopcroft-Karp 算法和 Dinic 算法的综合表现均较好。
+\end{itemize}
+
+\subsection{二部图最大权完美匹配}
+\subsubsection{问题描述}
+给定一个存在完美匹配的, 没有重边的二部图 $G = \left(V, E\right)$, 其左部点和右部点的个数均为 $n$, 边数为 $m$, 求其最大权完美匹配的边权之和及一个最大权完美匹配。
+\subsubsection{数据结构约定}
+在本问题中, 我们使用 0-based 索引的权值矩阵 $w$ 表示整个图。两部分点的编号均为 $0, 1, \cdots, n - 1$。$w[i][j]$ 表示左部编号为 $i$ 的点与右部编号为 $j$ 的点连成的边的权值(如果它们之间没有边，则$w[i][j] = -\infty$)。注意二部图是无向图。$match_x$ 和 $match_y$ 表示匹配关系。
+左部编号为 $i$ 的点与右部编号为 $match_x[i]$ 的点匹配, 右部编号为 $j$ 的点与左部编号为 $match_y[j]$ 的点匹配. 
+
+例如下面是一个二部图 (边的格式是 $(u, v, w[u][v])$):
+$$
+\begin{aligned}
+	L &= \left\{0, 1\right\} \\
+	R &= \left\{0, 1\right\} \\
+	E &= \left\{(0, 0, 1), (0, 1, 2), (1, 0, 3), (1, 1, 4)\right\} \\
+	w &=
+	\begin{pmatrix}
+		1 & 2 \\
+		3 & 4 \\
+	\end{pmatrix} 
+\end{aligned}
+$$
+这个二部图的一个最大权完美匹配为:
+$$
+\begin{aligned}
+	match_x[0] &= 0 \\
+	match_x[1] &= 1 \\
+	match_y[0] &= 0 \\
+	match_y[1] &= 1 \\
+\end{aligned}
+$$
+其边权之和为 $1 + 4 = 5$。
+
+现在, $w$ 已知, 需要求解最大权完美匹配的边权之和及一个最大权完美匹配的 $match_x$ 和 $match_y$。
+\subsubsection{Kuhn-Munkres 算法}
+利用 Kuhn-Munkres 算法可以求解二部图的最大权完美匹配问题。该算法的时间复杂度为 $\mathcal{O}(\left|V\right|^3)$, 空间复杂度为 $\mathcal{O}(\left|V\right|^2)$。
+\subsubsubsection{算法实现}
+附录 6 是对该算法的一个实现。函数 KuhnMunkres($w$) 需要参数 $w$, 函数返回一个 pair, 包含匹配关系 $match_x$ 和 $match_y$。
+\subsubsection{正确性与性能测试}
+以上算法都使用 \href{https://www.luogu.com.cn/problem/P6577}{Luogu P6577} 进行实际应用 (见附录)。
+我们利用 Luogu 进行初步测试。数据的范围是
+$$
+\begin{gathered}
+	1 \leq n \leq 500 \\
+	1 \leq m \leq n^2 \\
+	-19980731 \leq h \leq 19980731
+\end{gathered}
+$$
+
+\begin{table}[H]
+	\centering
+	\caption{Kuhn-Munkres 算法的\href{https://www.luogu.com.cn/record/195173111}{测试结果}}
+	\label{tab:kuhn_munkres_test_results}
+	\tabcolsep=0.09\linewidth
+	\begin{tabular}{cccc}
+		\toprule
+		\textbf{测试点编号} & \textbf{测试状态} & \textbf{时间} & \textbf{内存} \\
+		\midrule
+		\#1 & \textcolor{green}{Accepted} & 4 ms & 612.00 KB \\
+		\#2 & \textcolor{green}{Accepted} & 4 ms & 612.00 KB \\
+		\#3 & \textcolor{green}{Accepted} & 4 ms & 556.00 KB \\
+		\#4 & \textcolor{green}{Accepted} & 15 ms & 2.36 MB \\
+		\#5 & \textcolor{green}{Accepted} & 36 ms & 2.36 MB \\
+		\#6 & \textcolor{green}{Accepted} & 202 ms & 2.37 MB \\
+		\#7 & \textcolor{green}{Accepted} & 212 ms & 2.35 MB \\
+		\#8 & \textcolor{green}{Accepted} & 211 ms & 2.36 MB \\
+		\#9 & \textcolor{green}{Accepted} & 208 ms & 2.36 MB \\
+		\#10 & \textcolor{green}{Accepted} & 206 ms & 2.35 MB \\
+		\#11 & \textcolor{green}{Accepted} & 6 ms & 2.35 MB \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+由测试结果知, 该算法的实现正确, 且在本题数据下效率非常高。本题自带的测试数据已经足够全面, 且本题数据不容易生成(因为需要满足完美匹配的条件), 因此我们不再进行更多的测试。
