@@ -9,16 +9,18 @@ std::vector<int> Hierholzer(const std::vector<std::vector<int>>& g) {
         return {};
     }
     std::vector<std::map<int, int>> num(n + 1, std::map<int, int>());
+    std::vector<int> in(n + 1, 0);
     for (int u = 1; u <= n; ++u) {
         for (int v : g[u]) {
             ++num[u][v];
+            ++in[v];
         }
     }
     int begin = 1;
     for (int u = 2; u <= n; ++u) {
         if ((int)g[begin].size() == 0 && (int)g[u].size() != 0) {
             begin = u;
-        } else if ((int)g[begin].size() % 2 != 1 && (int)g[u].size() % 2 == 1) {
+        } else if ((int)g[begin].size() != in[begin] + 1 && (int)g[u].size() == in[u] + 1) {
             begin = u;
         }
     }
@@ -32,7 +34,6 @@ std::vector<int> Hierholzer(const std::vector<std::vector<int>>& g) {
             int v = g[u][idx[u]];
             if (num[u][v] > 0) {
                 --num[u][v];
-                --num[v][u];
                 st.push_back(v);
             }
             ++idx[u];
@@ -63,8 +64,6 @@ bool check(const std::vector<std::vector<int>>& g, const std::vector<int>& path)
             return false;
         }
         --num[u][v];
-        --m;
-        --num[v][u];
         --m;
     }
     return m == 0;
