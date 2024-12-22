@@ -4,28 +4,26 @@
 #include <map>
 
 std::vector<int> Hierholzer(const std::vector<std::vector<int>>& g) {
-    int n = (int)g.size();
+    int n = (int)g.size() - 1;
     if (n == 0) {
         return {};
     }
-    std::vector<std::map<int, int>> num(n, std::map<int, int>());
-    std::vector<int> in(n, 0);
-    for (int u = 0; u < n; ++u) {
+    std::vector<std::map<int, int>> num(n + 1, std::map<int, int>());
+    for (int u = 1; u <= n; ++u) {
         for (int v : g[u]) {
             ++num[u][v];
-            ++in[v];
         }
     }
-    int begin = 0;
-    for (int u = 1; u < n; ++u) {
+    int begin = 1;
+    for (int u = 2; u <= n; ++u) {
         if ((int)g[begin].size() == 0 && (int)g[u].size() != 0) {
             begin = u;
-        } else if ((int)g[begin].size() != in[begin] + 1 && (int)g[u].size() == in[u] + 1) {
+        } else if ((int)g[begin].size() % 2 != 1 && (int)g[u].size() % 2 == 1) {
             begin = u;
         }
     }
     std::vector<int> ans;
-    std::vector<int> idx(n, 0);
+    std::vector<int> idx(n + 1, 0);
     std::vector<int> st;
     st.push_back(begin);
     while (!st.empty()) {
@@ -34,6 +32,7 @@ std::vector<int> Hierholzer(const std::vector<std::vector<int>>& g) {
             int v = g[u][idx[u]];
             if (num[u][v] > 0) {
                 --num[u][v];
+                --num[v][u];
                 st.push_back(v);
             }
             ++idx[u];
@@ -47,10 +46,10 @@ std::vector<int> Hierholzer(const std::vector<std::vector<int>>& g) {
 }
 
 bool check(const std::vector<std::vector<int>>& g, const std::vector<int>& path) {
-    int n = (int)g.size();
+    int n = (int)g.size() - 1;
     int m = 0;
-    std::vector<std::map<int, int>> num(n, std::map<int, int>());
-    for (int u = 0; u < n; ++u) {
+    std::vector<std::map<int, int>> num(n + 1, std::map<int, int>());
+    for (int u = 1; u <= n; ++u) {
         for (int v : g[u]) {
             ++num[u][v];
             ++m;
@@ -60,10 +59,12 @@ bool check(const std::vector<std::vector<int>>& g, const std::vector<int>& path)
     for (int i = 0; i + 1 < ps; ++i) {
         int u = path[i];
         int v = path[i + 1];
-        if (u < 0 || u >= n || v < 0 || v >= n || num[u][v] == 0) {
+        if (u < 1 || u > n || v < 1 || v > n || num[u][v] == 0) {
             return false;
         }
         --num[u][v];
+        --m;
+        --num[v][u];
         --m;
     }
     return m == 0;
