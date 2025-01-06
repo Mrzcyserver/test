@@ -15,6 +15,8 @@
 
 // #define MULTI_TEST
 
+long long m;
+
 template <typename T>
 class SegmentTree {
 public:
@@ -23,17 +25,19 @@ public:
     public:
         bool status;
         T add;
+        T mul;
 
         // 无效 Tag 初始化, 作为默认构造函数.
         Tag() : status(false) {}
 
         // 有效 Tag 初始化, 根据需求具体实现.
-        Tag(const T& value) : status(true), add(value) {}
+        Tag(const T& a, const T& m) : status(true), add(a), mul(m) {}
 
         // 将有效的 Tag 应用到当前 Tag 上.
         void apply(const Tag& t) {
             if (status) {
-                add += t.add;
+                add = (add * t.mul % m + t.add) % m;
+                mul = mul * t.mul % m;
             } else {
                 *this = t;
             }
@@ -58,13 +62,13 @@ public:
             Info res;
             res.l = lhs.l;
             res.r = rhs.r;
-            res.sum = lhs.sum + rhs.sum;
+            res.sum = (lhs.sum + rhs.sum) % m;
             return res;
         }
 
         // 将有效的 Tag 应用到当前有效的 Info 上.
         void apply(const Tag& t) {
-            sum += (r - l + 1) * t.add;
+            sum = (sum * t.mul % m + ((r - l + 1) % m) * t.add % m) % m;
         }
     };
 
@@ -255,21 +259,28 @@ private:
 };
 
 void solve() {
-    int n, m;
-    std::cin >> n >> m;
+    int n, q;
+    std::cin >> n >> q >> m;
     std::vector<long long> a(n + 1);
     for (int i = 1; i <= n; ++i) {
         std::cin >> a[i];
+        a[i] = (a[i] % m + m) % m;
     }
     SegmentTree<long long> s(a);
-    while (m--) {
+    while (q--) {
         int op, x, y;
         std::cin >> op >> x >> y;
         if (op == 1) {
             long long k;
             std::cin >> k;
-            s.modify(x, y, k);
+            k = (k % m + m) % m;
+            s.modify(x, y, {0, k});
         } else if (op == 2) {
+            long long k;
+            std::cin >> k;
+            k = (k % m + m) % m;
+            s.modify(x, y, {k, 1});
+        } else if (op == 3) {
             std::cout << s.query(x, y).sum << '\n';
         }
     }
