@@ -1,19 +1,5 @@
 #include <iostream>
 #include <vector>
-#include <algorithm>
-#include <functional>
-#include <queue>
-#include <map>
-#include <set>
-#include <cassert>
-#include <stdexcept>
-#include <string>
-#include <utility>
-#include <tuple>
-#include <numeric>
-#include <limits>
-
-// #define MULTI_TEST
 
 template <typename T>
 class SegmentTree {
@@ -22,18 +8,18 @@ public:
     class Tag {
     public:
         bool status;
-        T add;
+        // 要维护的标记内容, 根据需求具体添加.
 
         // 无效 Tag 初始化, 作为默认构造函数.
         Tag() : status(false) {}
 
         // 有效 Tag 初始化, 根据需求具体实现.
-        Tag(const T& value) : status(true), add(value) {}
+        Tag(const T& value) : status(true) {}
 
         // 将有效的 Tag 应用到当前 Tag 上.
         void apply(const Tag& t) {
             if (status) {
-                add += t.add;
+                // 当前 Tag 有效时的应用逻辑, 根据需求具体实现.
             } else {
                 *this = t;
             }
@@ -45,26 +31,26 @@ public:
     public:
         long long l;
         long long r;
-        T sum;
+        // 要维护的量, 根据需求具体添加.
 
         // 无效 Info 初始化, 作为默认构造函数.
         Info() : l(-1), r(-1) {}
 
         // 有效 Info 单点初始化, 根据需求具体实现.
-        Info(long long pos, const T& value) : l(pos), r(pos), sum(value) {}
+        Info(long long pos, const T& value) : l(pos), r(pos) {}
 
         // 合并 2 个有效的 Info.
         friend Info operator+(const Info& lhs, const Info& rhs) {
             Info res;
             res.l = lhs.l;
             res.r = rhs.r;
-            res.sum = lhs.sum + rhs.sum;
+            // 合并逻辑, 根据需求具体实现.
             return res;
         }
 
         // 将有效的 Tag 应用到当前有效的 Info 上.
         void apply(const Tag& t) {
-            sum += (r - l + 1) * t.add;
+            // 根据需求具体实现.
         }
     };
 
@@ -141,15 +127,14 @@ private:
         info[i] = info[i * 2 + 1] + info[i * 2 + 2];
     }
 
-    template <typename U>
-    void build_from(long long i, long long l, long long r, const U& values) {
+    void build(long long i, long long l, long long r, const std::vector<T>& values) {
         if (l == r) {
             info[i] = Info(l, values[l]);
             return;
         }
         long long mid = (l + r) / 2;
-        build_from<U>(i * 2 + 1, l, mid, values);
-        build_from<U>(i * 2 + 2, mid + 1, r, values);
+        build(i * 2 + 1, l, mid, values);
+        build(i * 2 + 2, mid + 1, r, values);
         info[i] = info[i * 2 + 1] + info[i * 2 + 2];
     }
 
@@ -255,38 +240,6 @@ private:
     }
 };
 
-void solve() {
-    int n, m;
-    std::cin >> n >> m;
-    std::vector<long long> a(n + 1);
-    for (int i = 1; i <= n; ++i) {
-        std::cin >> a[i];
-    }
-    SegmentTree<long long> s(a);
-    while (m--) {
-        int op, x, y;
-        std::cin >> op >> x >> y;
-        if (op == 1) {
-            long long k;
-            std::cin >> k;
-            s.modify(x, y, k);
-        } else if (op == 2) {
-            std::cout << s.query(x, y).sum << '\n';
-        }
-    }
-}
-
 int main() {
-    std::ios::sync_with_stdio(false);
-    std::cin.tie(nullptr);
-#ifdef MULTI_TEST
-    long long t;
-    std::cin >> t;
-    while (t--) {
-        solve();
-    }
-#else
-    solve();
-#endif
     return 0;
 }
