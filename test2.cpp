@@ -13,9 +13,7 @@
 #include <numeric>
 #include <limits>
 
-// #define MULTI_TEST
-
-long long m;
+#define MULTI_TEST
 
 template <typename T>
 class SegmentTree {
@@ -24,20 +22,18 @@ public:
     class Tag {
     public:
         bool status;
-        T add;
-        T mul;
+        T lazy;
 
         // 无效 Tag 初始化, 作为默认构造函数.
         Tag() : status(false) {}
 
         // 有效 Tag 初始化, 根据需求具体实现.
-        Tag(const T& a, const T& m) : status(true), add(a), mul(m) {}
+        Tag(const T& value) : status(true), lazy(value) {}
 
         // 将有效的 Tag 应用到当前 Tag 上.
         void apply(const Tag& t) {
             if (status) {
-                add = (add * t.mul % m + t.add) % m;
-                mul = mul * t.mul % m;
+                lazy = t.lazy;
             } else {
                 *this = t;
             }
@@ -49,26 +45,32 @@ public:
     public:
         long long l;
         long long r;
-        T sum;
+        T min;
+        T max;
+        T diff;
 
         // 无效 Info 初始化, 作为默认构造函数.
         Info() : l(-1), r(-1) {}
 
         // 有效 Info 单点初始化, 根据需求具体实现.
-        Info(long long pos, const T& value) : l(pos), r(pos), sum(value) {}
+        Info(long long pos, const T& value) : l(pos), r(pos), min(value), max(value), diff(0) {}
 
         // 合并 2 个有效的 Info.
         friend Info operator+(const Info& lhs, const Info& rhs) {
             Info res;
             res.l = lhs.l;
             res.r = rhs.r;
-            res.sum = (lhs.sum + rhs.sum) % m;
+            res.min = std::min(lhs.min, rhs.min);
+            res.max = std::max(lhs.max, rhs.max);
+            res.diff = std::max({lhs.diff, rhs.diff, rhs.max - lhs.min});
             return res;
         }
 
         // 将有效的 Tag 应用到当前有效的 Info 上.
         void apply(const Tag& t) {
-            sum = (sum * t.mul % m + ((r - l + 1) % m) * t.add % m) % m;
+            min = t.lazy;
+            max = t.lazy;
+            diff = 0;
         }
     };
 
@@ -260,29 +262,26 @@ private:
 
 void solve() {
     int n, q;
-    std::cin >> n >> q >> m;
-    std::vector<long long> a(n + 1);
-    for (int i = 1; i <= n; ++i) {
+    std::cin >> n >> q;
+    std::vector<long long> a(n);
+    std::vector<long long> a1(n);
+    std::vector<long long> a2(n);
+    for (int i = 0; i < n; ++i) {
         std::cin >> a[i];
-        a[i] = (a[i] % m + m) % m;
+        a1[i] = a[i] - i;
+        a2[i] = -a[i] - i;
     }
-    SegmentTree<long long> s(a);
+    SegmentTree<long long> seg1(a1);
+    SegmentTree<long long> seg2(a2);
+    std::cout << std::max(seg1.query(0, n - 1).diff, seg2.query(0, n - 1).diff) << '\n';
     while (q--) {
-        int op, x, y;
-        std::cin >> op >> x >> y;
-        if (op == 1) {
-            long long k;
-            std::cin >> k;
-            k = (k % m + m) % m;
-            s.modify(x, y, {0, k});
-        } else if (op == 2) {
-            long long k;
-            std::cin >> k;
-            k = (k % m + m) % m;
-            s.modify(x, y, {k, 1});
-        } else if (op == 3) {
-            std::cout << s.query(x, y).sum << '\n';
-        }
+        int p;
+        long long x;
+        std::cin >> p >> x;
+        --p;
+        seg1.modify(p, p, x - p);
+        seg2.modify(p, p, -x - p);
+        std::cout << std::max(seg1.query(0, n - 1).diff, seg2.query(0, n - 1).diff) << '\n';
     }
 }
 
