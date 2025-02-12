@@ -24,11 +24,11 @@ public:
     template <typename T>
     ModInt(const T& v): value(((long long)(v % mod) + mod) % mod) {}
 
-    long long getValue() const {
+    long long get_value() const {
         return value;
     }
 
-    static int getMod() {
+    static int get_mod() {
         return mod;
     }
 
