@@ -11,9 +11,9 @@ std::tuple<T, T, T> exgcd(const T& a, const T& b) {
     return {g, y, x - a / b * y};
 }
 
-template <int mod>
+template <long long mod>
 class ModInt {
-    static_assert(mod >= 1, "The modulus must be a positive integer.");
+    static_assert(mod >= 1LL, "The modulus must be a positive integer.");
 private:
     long long value;
 public:
@@ -28,12 +28,12 @@ public:
         return value;
     }
 
-    static int get_mod() {
+    static long long get_mod() {
         return mod;
     }
 
     ModInt inv() const {
-        auto [g, x, y] = exgcd<long long>(value, (long long)mod);
+        auto [g, x, y] = exgcd<long long>(value, mod);
         if (g != 1LL) {
             throw std::runtime_error("The modular inverse does not exist.");
         }
@@ -47,15 +47,15 @@ public:
 
     template <typename T>
     ModInt pow(T b) const {
-        long long a = ((b >= 0) ? value : inv().value);
+        long long a = ((b >= T(0)) ? value : inv().value);
         ModInt res;
-        res.value = ((mod >= 2) ? 1LL : 0LL);
-        while (b != 0) {
-            if (b % 2 != 0) {
+        res.value = ((mod >= 2LL) ? 1LL : 0LL);
+        while (b != T(0)) {
+            if (b % T(2) != T(0)) {
                 res.value = res.value * a % mod;
             }
             a = a * a % mod;
-            b = b / 2;
+            b = b / T(2);
         }
         return res;
     }
